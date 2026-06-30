@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Court Case Info Overlay</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    font-family: 'Times New Roman', Times, serif;
+  }
+
+  #overlay {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 12px 16px;
+    gap: 16px;
+  }
+
+  #overlay.hidden { display: none !important; }
+
+  #sealWrap {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #sealWrap img,
+  #sealPlaceholder {
+    border-radius: 50%;
+    object-fit: contain;
+    /* size set by JS */
+  }
+
+  #sealPlaceholder {
+    background: rgba(0,0,0,0.5);
+    border: 3px solid rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.4);
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+
+  #infoPanel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1;
+    min-width: 0;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  #caseTitle {
+    font-weight: bold;
+    color: #fff;
+    letter-spacing: 0.05em;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.9);
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #caseSubtitle {
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 0.03em;
+    text-shadow: 1px 1px 6px rgba(0,0,0,0.9);
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #timeAlloc {
+    display: flex;
+    flex-direction: column;
+    margin-top: 2px;
+  }
+
+  .time-row {
+    color: #5bc8ff;
+    letter-spacing: 0.02em;
+    text-shadow: 1px 1px 6px rgba(0,0,0,0.9);
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>
+</head>
+<body>
+
+<div id="overlay" class="hidden">
+  <div id="sealWrap">
+    <div id="sealPlaceholder">COURT<br>SEAL</div>
+    <img id="sealImg" style="display:none" src="" alt="Court Seal">
+  </div>
+  <div id="infoPanel">
+    <div id="caseTitle"></div>
+    <div id="caseSubtitle"></div>
+    <div id="timeAlloc"></div>
+  </div>
+</div>
+
+
+<script>
+  // Count how many visible text lines exist
+  function countLines(info) {
+    let n = 0;
+    if (info.caseTitle    && info.caseTitle.trim())    n++;
+    if (info.caseSubtitle && info.caseSubtitle.trim()) n++;
+    const allocCount = (info.allocations || []).filter(l => l.trim()).length;
+    n += allocCount;
+    return Math.max(n, 1);
+  }
+
+  function applyFontSizes(info) {
+    const H          = window.innerHeight;
+    const W          = window.innerWidth;
+    const lines      = countLines(info);
+    const padding    = 24;
+    const gapPerLine = 3;
+    const scale      = (info.sizeScale || 100) / 100;
+
+    const available = H - padding - (gapPerLine * (lines - 1));
+
+    const hasTitle    = !!(info.caseTitle    && info.caseTitle.trim());
+    const hasSubtitle = !!(info.caseSubtitle && info.caseSubtitle.trim());
+    const allocCount  = (info.allocations || []).filter(l => l.trim()).length;
+
+    const totalWeight = (hasTitle ? 1.4 : 0) + (hasSubtitle ? 1.0 : 0) + (allocCount * 0.95);
+    const unitPx      = totalWeight > 0 ? available / totalWeight : available;
+
+    const titleSize    = Math.min(Math.round(unitPx * 1.4 * scale), Math.round(W * 0.08 * scale));
+    const subtitleSize = Math.min(Math.round(unitPx * 1.0 * scale), Math.round(W * 0.06 * scale));
+    const allocSize    = Math.min(Math.round(unitPx * 0.95 * scale), Math.round(W * 0.055 * scale));
+    const sealSize     = Math.round(Math.min(H * 0.8, H - padding));
+
+    // Apply font family to all text elements
+    const fontFamily = info.fontFamily || "'Times New Roman', Times, serif";
+    document.getElementById('overlay').style.fontFamily = fontFamily;
+
+    document.getElementById('caseTitle').style.fontSize    = titleSize    + 'px';
+    document.getElementById('caseSubtitle').style.fontSize = subtitleSize + 'px';
+    document.querySelectorAll('.time-row').forEach(el => {
+      el.style.fontSize = allocSize + 'px';
+    });
+
+    const sealImg         = document.getElementById('sealImg');
+    const sealPlaceholder = document.getElementById('sealPlaceholder');
+    if (!info.hideSeal) {
+      const sz = sealSize + 'px';
+      sealImg.style.width          = sz;
+      sealImg.style.height         = sz;
+      sealPlaceholder.style.width  = sz;
+      sealPlaceholder.style.height = sz;
+      sealPlaceholder.style.fontSize = Math.round(sealSize * 0.12) + 'px';
+    }
+
+    document.getElementById('infoPanel').style.gap = gapPerLine + 'px';
+    document.getElementById('timeAlloc').style.gap = '0px';
+  }
+
+  let lastInfo = null;
+
+  function loadAndRender() {
+    try {
+      const raw     = localStorage.getItem('test_courtCaseInfo');
+      const overlay = document.getElementById('overlay');
+
+      if (!raw) { overlay.classList.add('hidden'); return; }
+
+      const info = JSON.parse(raw);
+
+      if (info.visible === false) {
+        overlay.classList.add('hidden');
+        return;
+      }
+
+      // ── Seal ──
+      const sealImg         = document.getElementById('sealImg');
+      const sealPlaceholder = document.getElementById('sealPlaceholder');
+      const sealWrap        = document.getElementById('sealWrap');
+
+      if (info.hideSeal) {
+        sealWrap.style.display = 'none';
+      } else if (info.sealUrl) {
+        sealWrap.style.display        = '';
+        sealImg.src                   = info.sealUrl;
+        sealImg.style.display         = 'block';
+        sealPlaceholder.style.display = 'none';
+      } else {
+        sealWrap.style.display        = '';
+        sealImg.style.display         = 'none';
+        sealPlaceholder.style.display = 'flex';
+      }
+
+      // ── Text ──
+      document.getElementById('caseTitle').textContent    = info.caseTitle    || '';
+      document.getElementById('caseSubtitle').textContent = info.caseSubtitle || '';
+
+      // ── Time allocations ──
+      const alloc = document.getElementById('timeAlloc');
+      alloc.innerHTML = '';
+      (info.allocations || []).filter(l => l.trim()).forEach(line => {
+        const div = document.createElement('div');
+        div.className   = 'time-row';
+        div.textContent = line;
+        alloc.appendChild(div);
+      });
+
+      // ── Show overlay ──
+      const hasContent = info.caseTitle || info.caseSubtitle
+        || (info.allocations || []).some(l => l.trim())
+        || info.sealUrl || !info.hideSeal;
+
+      if (hasContent) {
+        overlay.classList.remove('hidden');
+        applyFontSizes(info);
+      } else {
+        overlay.classList.add('hidden');
+      }
+
+    } catch(e) {}
+  }
+
+  // storage event fires immediately when controls write localStorage
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'test_courtCaseInfo') loadAndRender();
+  });
+  // Fallback poll
+  setInterval(loadAndRender, 250);
+  loadAndRender();
+</script>
+<script>
+  // Auto-update: keep this OBS source on the latest version (offline cache + reload on new release)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      reg.update();
+      window.addEventListener('focus', () => { try { reg.update(); } catch (e) {} });
+    }).catch(() => {});
+    let _r = false;
+    const _wc = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!_wc || _r) return; _r = true; window.location.reload();
+    });
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Court Timer</title>
+<style>
+  body { background:#111; color:#e0e0e0; font-family:'Segoe UI',system-ui,sans-serif; margin:0; padding:40px 20px; line-height:1.6; }
+  .wrap { max-width:640px; margin:0 auto; }
+  h1 { color:#fff; font-weight:600; letter-spacing:.02em; }
+  p { color:#9a9a9a; }
+  .card { display:block; margin:10px 0; padding:16px 18px; background:#1e1e1e; border:1px solid #2a2a2a;
+          border-left:3px solid #00e000; border-radius:8px; color:#fff; text-decoration:none; }
+  .card:hover { background:#262626; }
+  .card .t { font-size:17px; font-weight:600; }
+  .card .d { font-size:13px; color:#9a9a9a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Court Timer</h1>
+  <p>Oral-argument timer for OBS. Open the operator controls on the clerk's machine; add the display and overlay as OBS Browser Sources.</p>
+
+  <a class="card" href="sc_timer_controls.html">
+    <div class="t">▶ Controls</div>
+    <div class="d">Operator panel — start/pause, switch speakers, load cases.</div>
+  </a>
+  <a class="card" href="sc_timer_display.html">
+    <div class="t">⏱ Display</div>
+    <div class="d">The countdown shown on the courtroom screen. Add as an OBS Browser Source.</div>
+  </a>
+  <a class="card" href="sc_case_overlay.html">
+    <div class="t">▦ Case Overlay</div>
+    <div class="d">Case title / allocations overlay. Add as an OBS Browser Source.</div>
+  </a>
+</div>
+</body>
+</html>

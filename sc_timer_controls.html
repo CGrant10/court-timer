@@ -1,0 +1,2378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Court Timer — Controls</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ── Theme variables ── */
+  :root {
+    --bg:           #111111;
+    --bg-deep:      #080808;
+    --bg-section:   #1e1e1e;
+    --bg-input:     #2a2a2a;
+    --bg-input-foc: #333333;
+    --bg-btn:       #252525;
+    --bg-btn-hov:   #303030;
+    --bg-multi-row: #1a1a1a;
+    --border:       #2a2a2a;
+    --border-sec:   #3a3a3a;
+    --border-sec2:  #333333;
+    --border-input: #555555;
+    --border-btn:   #3a3a3a;
+    --text:         #e0e0e0;
+    --text-strong:  #ffffff;
+    --text-muted:   #888888;
+    --text-faint:   #606060;
+    --text-label:   #bbbbbb;
+    --text-row:     #e0e0e0;
+    --accent:       #00e000;
+    --accent-bg:    #0a2a0a;
+    --accent-brd:   #1a5a1a;
+    --scrollbar:    #444444;
+  }
+  body.light {
+    --bg:           #f0f0f0;
+    --bg-deep:      #e4e4e4;
+    --bg-section:   #ffffff;
+    --bg-input:     #ffffff;
+    --bg-input-foc: #f8f8f8;
+    --bg-btn:       #e8e8e8;
+    --bg-btn-hov:   #dcdcdc;
+    --bg-multi-row: #f5f5f5;
+    --border:       #cccccc;
+    --border-sec:   #cccccc;
+    --border-sec2:  #dddddd;
+    --border-input: #bbbbbb;
+    --border-btn:   #cccccc;
+    --text:         #222222;
+    --text-strong:  #000000;
+    --text-muted:   #555555;
+    --text-faint:   #888888;
+    --text-label:   #444444;
+    --text-row:     #333333;
+    --accent:       #008800;
+    --accent-bg:    #e6f4e6;
+    --accent-brd:   #88cc88;
+    --scrollbar:    #aaaaaa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    min-width: 300px;
+    height: 100%;
+    background: var(--bg);
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    overflow-y: auto;
+    overflow-x: auto;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  /* ── Bottom utility bar (Sections, Help, Theme) ── */
+  #bottomBar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    display: flex;
+    justify-content: flex-end;
+    background: var(--bg-deep);
+    border-top: 1px solid var(--border);
+  }
+  #bottomBar button {
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    border-left: 1px solid var(--border);
+    border-radius: 0;
+    padding: 7px 14px;
+    font-size: 11px;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  #bottomBar button:hover { background: var(--bg-btn-hov); color: var(--text-strong); }
+  #bottomBar button:active { transform: none; }
+  #sectionsBtn.panel-open { color: var(--text-strong); }
+
+  /* pad page bottom so content isn't hidden behind the bar */
+  body { padding-bottom: 34px; }
+
+  /* ── Sections manager panel ── */
+  #sectionsMgr {
+    position: fixed;
+    bottom: 34px; /* sit just above the bottom bar */
+    left: 0;
+    right: 0;
+    z-index: 199;
+    background: var(--bg-section);
+    border-top: 1px solid var(--border-sec);
+    border-bottom: 1px solid var(--border-sec);
+    padding: 10px 12px;
+  }
+  #sectionsMgr .mgr-title {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+  }
+  #sectionsMgr .mgr-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .mgr-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border-btn);
+    background: var(--bg-btn);
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+    user-select: none;
+  }
+  .mgr-chip:hover { background: var(--bg-btn-hov); }
+  .mgr-chip.hidden-section {
+    opacity: 0.45;
+    border-style: dashed;
+  }
+  .mgr-chip .chip-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    transition: background 0.12s;
+  }
+  .mgr-chip.hidden-section .chip-dot {
+    background: var(--text-faint);
+  }
+
+  /* Section hidden state */
+  .section[data-hidden="true"] { display: none !important; }
+
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg);
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+  .tabs::-webkit-scrollbar { height: 2px; }
+  .tabs::-webkit-scrollbar-thumb { background: var(--scrollbar); }
+
+  .tab {
+    flex-shrink: 0;
+    padding: 10px 8px 10px 10px;
+    background: var(--bg);
+    color: var(--text);
+    border: none;
+    border-right: 1px solid var(--border);
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+  .tab:hover { background: var(--bg-btn-hov); color: var(--text-label); }
+  .tab.active { background: var(--bg-section); color: var(--text-strong); }
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+  }
+  .tab.warning { color: #d4a000; }
+  .tab.danger  { color: #e03030; }
+  .tab.active.warning::after { background: #f5c518; }
+  .tab.active.danger::after  { background: #e03030; }
+  .tab.on-display .tab-label::before {
+    content: '▶ ';
+    font-size: 8px;
+    color: var(--accent);
+  }
+
+  .tab-close {
+    font-size: 11px;
+    color: var(--text-faint);
+    background: none;
+    border: none;
+    padding: 0 2px;
+    cursor: pointer;
+    line-height: 1;
+    border-radius: 3px;
+    transition: color 0.1s, background 0.1s;
+    flex-shrink: 0;
+  }
+  .tab-close:hover { color: #e03030; background: #2a0000; }
+
+  .tab-add {
+    flex-shrink: 0;
+    padding: 10px 14px;
+    background: var(--bg);
+    color: var(--accent);
+    border: none;
+    border-left: 1px solid var(--border);
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+    margin-left: auto;
+    transition: background 0.15s;
+  }
+  .extra-row-label {
+    padding: 0 10px;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    display: flex;
+    align-items: center;
+    border-right: 1px solid var(--border);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .tab-add:hover { background: var(--bg-btn-hov); }
+
+  /* ── Readout ── */
+  .readout {
+    text-align: center;
+    padding: 16px 12px 14px;
+    border-bottom: 2px solid var(--border);
+    background: var(--bg-deep);
+  }
+  .readout-label {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-label);
+    margin-bottom: 4px;
+  }
+  .readout-time {
+    font-size: clamp(48px, 18vw, 96px);
+    line-height: 1;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    transition: color 0.3s, opacity 0.15s ease-in-out;
+    font-family: 'Times New Roman', Times, serif;
+  }
+  .readout-time.set-flash {
+    animation: set-flash 0.35s ease-out forwards;
+  }
+  @keyframes set-flash {
+    0%   { opacity: 0.15; transform: scale(0.97); }
+    100% { opacity: 1;    transform: scale(1);    }
+  }
+  .readout-time.warning { color: #d4a000; }
+  .readout-time.danger  { color: #e03030; }
+  .readout-meta {
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-top: 6px;
+    transition: color 0.3s;
+  }
+  @keyframes rec-blink { 0%,49%{opacity:1} 50%,100%{opacity:0.15} }
+  .readout-meta.on-display { color: #e03030; font-weight: 600; }
+  .readout-meta.on-display::before {
+    content: '\25CF';
+    color: #e03030;
+    margin-right: 6px;
+    animation: rec-blink 1s step-start infinite;
+    display: inline-block;
+  }
+
+  /* ── Sections ── */
+  .section {
+    margin: 10px 10px 0;
+    border: 1px solid var(--border-sec);
+    border-radius: 7px;
+    background: var(--bg-section);
+    overflow: hidden;
+  }
+  .section:last-of-type { margin-bottom: 10px; }
+  .section-title {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-label);
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-sec2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .section-title:hover { background: var(--bg-btn-hov); }
+  .section-title::after {
+    content: '▲';
+    font-size: 9px;
+    color: var(--text-faint);
+    transition: transform 0.2s;
+  }
+  .section.collapsed .section-title::after { transform: rotate(180deg); }
+  .section.collapsed .section-title { border-bottom: none; }
+  .section-body { padding: 10px 12px 12px; }
+  .section.collapsed .section-body { display: none; }
+
+  .btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  button {
+    background: var(--bg-btn);
+    color: var(--text-strong);
+    border: 1px solid var(--border-btn);
+    border-radius: 5px;
+    padding: 8px 14px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+    white-space: nowrap;
+  }
+  button:hover  { background: var(--bg-btn-hov); color: var(--text-strong); }
+  button:active { transform: scale(0.97); }
+  button.running    { background: #3a0000; color: #e03030; border-color: #5a0000; }
+  button.on-display { background: var(--accent-bg); color: var(--accent); border-color: var(--accent-brd); }
+
+  .multi-timer-row {
+    margin: 6px 10px 0;
+    padding: 8px 12px;
+    background: var(--bg-multi-row);
+    border: 1px solid var(--border-sec);
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .multi-timer-row .row-name {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-label);
+    min-width: 80px;
+    flex-shrink: 0;
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 2px 4px;
+    transition: background 0.12s, color 0.12s;
+  }
+  .multi-timer-row .row-name:hover {
+    background: var(--bg-btn-hov);
+    color: var(--text-strong);
+  }
+  .multi-timer-row .row-name-input {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--bg-input-foc);
+    color: var(--text-strong);
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    padding: 2px 5px;
+    width: 100px;
+    min-width: 60px;
+    font-family: 'Inter', sans-serif;
+    text-align: left;
+    outline: none;
+  }
+  /* Inline rename input when editing a tab label (double-click) */
+  .tab .row-name-input {
+    width: 90px;
+    min-width: 50px;
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+  .multi-timer-row .readout-mini {
+    font-size: 18px;
+    color: var(--accent);
+    min-width: 60px;
+    font-family: 'Times New Roman', Times, serif;
+  }
+  .multi-timer-row .readout-mini.warning { color: #d4a000; }
+  .multi-timer-row .readout-mini.danger  { color: #e03030; }
+
+  .multi-timer-row input[type=number]::-webkit-inner-spin-button,
+  .multi-timer-row input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .multi-timer-row input[type=number]:focus { outline: none; border-color: var(--text-label); background: var(--bg-input-foc); }
+
+  button.active-mode { background: var(--accent-bg); color: var(--accent); border-color: var(--accent-brd); }
+  button.flex1 { flex: 1; }
+
+  .set-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+  input[type=number], input[type=text] {
+    background: var(--bg-input);
+    color: var(--text-strong);
+    border: 1px solid var(--border-input);
+    border-radius: 5px;
+    padding: 10px 6px;
+    font-size: 18px;
+    font-family: 'Inter', sans-serif;
+    text-align: center;
+    cursor: text;
+    transition: opacity 0.2s;
+  }
+  .frozen { opacity: 0.35; cursor: not-allowed; }
+  input[type=number], #minInput, #secInput, #simpleMin, #simpleSec { width: 64px; }
+  input[type=text]   { width: 100%; text-align: left; font-size: 14px; }
+  /* Time digit inputs — big, centered, tight padding */
+  #minInput, #secInput, #simpleMin, #simpleSec {
+    width: 64px;
+    font-size: 22px;
+    padding: 4px 2px;
+    text-align: center;
+    font-family: 'Times New Roman', Times, serif;
+    letter-spacing: 0.02em;
+  }
+  input:focus { outline: none; border-color: var(--text-label); background: var(--bg-input-foc); }
+
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+
+  .row-label { font-size: 12px; color: var(--text-row); white-space: nowrap; }
+
+  .settings-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 10px;
+    align-items: center;
+  }
+  .settings-grid label { font-size: 12px; color: var(--text-row); white-space: nowrap; }
+
+  .subsection-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-label);
+    margin-bottom: 8px;
+  }
+
+  .toggle-row { display: flex; align-items: center; gap: 8px; }
+  input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; accent-color: #f5c518; }
+  .toggle-row span { font-size: 13px; color: var(--text-row); }
+
+  /* ── Drag handle ── */
+  .drag-handle {
+    cursor: grab;
+    color: var(--text-faint);
+    font-size: 14px;
+    margin-right: 6px;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .drag-handle:hover { color: var(--text-label); }
+  .section.dragging { opacity: 0.9; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .section.drag-over { border-color: var(--border-sec); }
+  #sectionContainer { padding-bottom: 4px; }
+
+  /* ── Dynamic element classes (used in JS-built UI) ── */
+  .kbd-badge {
+    background: var(--bg-btn);
+    color: var(--text);
+    border: 1px solid var(--border-input);
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 10px;
+    font-family: monospace;
+  }
+  .kbd-label { color: var(--text-label); }
+  .text-editor-label { color: var(--text-label); font-size: 11px; white-space: nowrap; cursor: pointer; }
+  .multi-cb-label {
+    display: flex; align-items: center; gap: 5px; font-size: 13px; cursor: pointer;
+    background: var(--bg-btn); border: 1px solid var(--border-sec); border-radius: 5px; padding: 6px 10px;
+    color: var(--text);
+  }
+  .multi-input {
+    width: 56px !important; background: var(--bg-input); color: var(--text-strong);
+    border: 1px solid var(--border-input); border-radius: 5px; padding: 6px;
+    font-size: 16px; text-align: center !important; font-family: Inter,sans-serif;
+    cursor: text;
+  }
+  .overlay-font-select {
+    background: var(--bg-input); color: var(--text-strong); border: 1px solid var(--border-input);
+    border-radius: 5px; padding: 8px 6px; font-size: 13px; font-family: Inter,sans-serif; cursor: pointer;
+    width: 100%;
+  }
+  .preset-name-input {
+    flex: 1; font-size: 13px; padding: 7px 8px; background: var(--bg-input);
+    color: var(--text-strong); border: 1px solid var(--border-input);
+    border-radius: 5px; font-family: Inter,sans-serif;
+  }
+  .alloc-input {
+    flex: 1; background: var(--bg-input); color: var(--text-strong);
+    border: 1px solid var(--border-input); border-radius: 5px;
+    padding: 7px 8px; font-size: 13px; font-family: Inter,sans-serif;
+  }
+  .preset-load-btn {
+    flex: 1; text-align: left; padding: 7px 10px; font-size: 13px;
+    background: var(--bg-btn); border: 1px solid var(--border-btn);
+    border-radius: 5px; color: var(--text); overflow: hidden; white-space: nowrap;
+    cursor: pointer; display: flex; flex-direction: column; gap: 2px;
+  }
+  .preset-del-btn {
+    padding: 7px 10px; font-size: 13px; color: #e03030;
+    border: 1px solid #5a0000; background: #2a0000;
+    border-radius: 5px; flex-shrink: 0; cursor: pointer;
+  }
+  body.light .preset-del-btn { background: #fde8e8; border-color: #f0aaaa; }
+  /* Placeholder text colors for themed inputs */
+  ::placeholder { color: var(--text-faint); opacity: 1; }
+  select option { background: var(--bg-input); color: var(--text-strong); }
+  .btn-save-case    { padding:7px 12px;font-size:13px;white-space:nowrap;background:var(--accent-bg);color:var(--accent);border-color:var(--accent-brd); }
+  .btn-save-session { padding:7px 12px;font-size:13px;white-space:nowrap;background:#1a1a2a;color:#5bc8ff;border-color:#1a3a5a; }
+  body.light .btn-save-session { background:#e6f0fa;color:#1a6aaa;border-color:#99c0e0; }
+  .btn-alloc-del    { padding:7px 10px;font-size:13px;color:#e03030;border-color:#5a0000;background:#2a0000; }
+  body.light .btn-alloc-del  { background: #fde8e8; border-color: #f0aaaa; }
+  .session-preset-subtitle { font-size:10px;color:#5bc8ff;letter-spacing:0.06em; }
+  body.light .session-preset-subtitle { color:#1a6aaa; }
+  .preset-update-btn { padding:7px 10px;font-size:12px;white-space:nowrap;background:#1a1a2a;color:#5bc8ff;border:1px solid #1a3a5a;border-radius:5px;flex-shrink:0;cursor:pointer; }
+  body.light .preset-update-btn { background:#e6f0fa;color:#1a6aaa;border-color:#99c0e0; }
+  .preset-update-btn.confirming { background:#3a2a00;color:#f5c518;border-color:#5a4a00; }
+  .preset-rename-btn { padding:7px 9px;font-size:12px;white-space:nowrap;background:var(--bg-btn);color:var(--text);border:1px solid var(--border-btn);border-radius:5px;flex-shrink:0;cursor:pointer; }
+  .preset-rename-btn:hover { background:var(--bg-btn-hov); }
+  .preset-rename-input { flex:1;min-width:60px;font-size:13px;font-weight:600;padding:7px 8px;background:var(--bg-input-foc);color:var(--text-strong);border:1px solid var(--accent);border-radius:5px;font-family:Inter,sans-serif;outline:none; }
+
+  /* ── Simple mode ── */
+  body.simple-mode #sectionContainer { display: none; }
+  body.simple-mode #multiSetTimes    { display: none !important; }
+  body.simple-mode #sectionsMgr      { display: none !important; }
+  body.simple-mode .tab-add          { display: none; }
+  body.simple-mode #simpleControls   { display: flex; flex-direction: column; align-items: center; }
+  #simpleControls {
+    display: none;
+    padding: 10px;
+    background: var(--bg-deep);
+    border-bottom: 1px solid var(--border);
+    flex-direction: column;
+    align-items: center;
+  }
+  #simpleControlsInner {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  #simpleMainRow {
+    display: flex;
+    gap: 10px;
+  }
+  #simpleMainRow button {
+    flex: 1;
+    font-size: 20px;
+    padding: 16px 10px;
+    border-radius: 7px;
+    letter-spacing: 0.06em;
+  }
+  #simpleAdjustRow {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+
+
+  #simpleAdjustRow input[type=number], #simpleAdjustRow input[type=text] {
+    font-size: 22px;
+    padding: 4px 2px;
+    width: 64px;
+    border-radius: 7px;
+    font-family: 'Times New Roman', Times, serif;
+  }
+  .simple-colon {
+    font-size: 22px;
+    color: var(--text-muted);
+  }
+  .simple-set-btn {
+    flex: 1;
+    font-size: 20px;
+    padding: 16px 10px;
+    border-radius: 7px;
+    letter-spacing: 0.06em;
+  }
+  #simpleModeBtn.simple-active {
+    background: var(--accent-bg);
+    color: var(--accent);
+    border-color: var(--accent-brd) !important;
+  }
+
+  /* ── About dialog ── */
+  .about-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .about-card {
+    background: var(--bg-section);
+    border: 1px solid var(--border-sec);
+    border-radius: 10px;
+    padding: 20px 22px;
+    max-width: 380px; width: 100%;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  }
+  .about-title { font-size: 18px; font-weight: 600; color: var(--text-strong); }
+  .about-version { font-size: 14px; font-weight: 600; color: var(--accent); margin-top: 3px; }
+  .about-updated { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .about-whatsnew-label {
+    font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--text-faint); margin: 16px 0 6px;
+  }
+  .about-list { margin: 0; padding-left: 18px; color: var(--text); font-size: 13px; line-height: 1.6; }
+  .about-update-row { margin-top: 16px; text-align: center; min-height: 20px; }
+  .about-uptodate { font-size: 13px; color: var(--text-muted); }
+  .about-update-btn {
+    width: 100%;
+    font-size: 14px; font-weight: 600;
+    padding: 11px 10px;
+    border-radius: 8px;
+    background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-brd);
+  }
+  .about-check-btn {
+    width: 100%; margin-top: 8px;
+    font-size: 13px; padding: 9px 10px;
+    border-radius: 8px;
+    background: var(--bg-btn); color: var(--text); border: 1px solid var(--border-btn);
+  }
+  .about-check-btn:hover { background: var(--bg-btn-hov); }
+  .about-guide-link { display: block; text-align: center; margin-top: 14px; font-size: 12px; color: var(--text-muted); }
+  .about-close { margin-top: 12px; width: 100%; }
+
+  /* Collapsible "advanced" disclosure (Case Info branding) */
+  details.advanced-block { border-top: 1px solid var(--border-sec2); padding-top: 8px; }
+  details.advanced-block > summary {
+    cursor: pointer; list-style: none;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-label); padding: 6px 0; user-select: none;
+    display: flex; align-items: center; gap: 7px;
+  }
+  details.advanced-block > summary::-webkit-details-marker { display: none; }
+  details.advanced-block > summary::before {
+    content: '▸'; color: var(--text-faint); transition: transform 0.15s; display: inline-block;
+  }
+  details.advanced-block[open] > summary::before { transform: rotate(90deg); }
+</style>
+</head>
+<body>
+
+<!-- Timer tabs: core row -->
+<div class="tabs" id="coreTabRow">
+  <!-- rendered by JS -->
+  <button class="tab-add" id="addTimerBtn" onclick="addTimer()">+ Add</button>
+</div>
+<!-- Extra tabs row (hidden until extras added) -->
+<div class="tabs extra-row" id="extraTabRow" style="display:none">
+  <div class="extra-row-label">Extra</div>
+  <!-- rendered by JS -->
+</div>
+
+<!-- Sections visibility panel -->
+<div id="sectionsMgr" style="display:none"></div>
+
+<!-- Live readout of selected timer -->
+<div class="readout">
+  <div class="readout-label" id="readout-label">APPELLANT</div>
+  <div class="readout-time" id="readout-time">20:00</div>
+  <div class="readout-meta" id="readout-meta">not on display</div>
+</div>
+
+<!-- Simple mode controls -->
+<div id="simpleControls">
+  <div id="simpleControlsInner">
+    <div id="simpleMainRow">
+      <button id="simpleStartBtn" onclick="doToggle()">START</button>
+      <button id="simpleDisplayBtn" onclick="doDisplay()">DISPLAY</button>
+    </div>
+    <div id="simpleAdjustRow">
+      <input type="text" inputmode="numeric" id="simpleMin" value="20" title="Minutes">
+      <span class="simple-colon">:</span>
+      <input type="text" inputmode="numeric" id="simpleSec" value="00" title="Seconds" onblur="this.value=String(Math.min(59,parseInt(this.value)||0)).padStart(2,'0')">
+      <button class="simple-set-btn" onclick="doSimpleSet()">SET</button>
+      <button class="simple-set-btn" id="simpleResetBtn" onclick="doReset(this)">RESET</button>
+    </div>
+    <div style="text-align:center;font-size:11px;color:#888;letter-spacing:0.04em;line-height:1.8">
+      <span class="kbd-badge">SPACE</span> <span class="kbd-label">start/pause</span>
+      &nbsp;·&nbsp;
+      <span class="kbd-badge">D</span> <span class="kbd-label">display</span>
+      &nbsp;·&nbsp;
+<span class="kbd-badge" id="kbdTimerHint1">1 2 3</span> <span class="kbd-label">select timer</span>
+    </div>
+  </div>
+</div>
+
+<div id="sectionContainer">
+<!-- Playback -->
+<div class="section" data-section-id="playback">
+  <!-- playback --><div class="section-title" onclick="toggleSection(this)"><span class="drag-handle" onmousedown="startDrag(event)">⠿</span>Playback</div>
+  <div class="section-body">
+    <div class="btn-row">
+      <button id="startBtn"   onclick="doToggle()"   class="flex1">START</button>
+      <button id="displayBtn" onclick="doDisplay()"  class="flex1">DISPLAY</button>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:#888;letter-spacing:0.04em;line-height:1.8">
+      <span class="kbd-badge">SPACE</span> <span class="kbd-label">start/pause</span>
+      &nbsp;·&nbsp;
+      <span class="kbd-badge">D</span> <span class="kbd-label">display</span>
+      &nbsp;·&nbsp;
+<span class="kbd-badge" id="kbdTimerHint2">1 2 3</span> <span class="kbd-label">select timer</span>
+    </div>
+  </div>
+</div>
+
+<!-- Set / Reset -->
+<div class="section" data-section-id="settime">
+  <!-- settime --><div class="section-title" onclick="toggleSection(this)"><span class="drag-handle" onmousedown="startDrag(event)">⠿</span>Set time</div>
+  <div class="section-body">
+    <div class="set-row">
+      <span class="row-label">Min:</span>
+      <input type="text" inputmode="numeric" id="minInput" value="20" onfocus="this.select()">
+      <span class="row-label">Sec:</span>
+      <input type="text" inputmode="numeric" id="secInput" value="00" onblur="this.value=String(Math.min(59,parseInt(this.value)||0)).padStart(2,'0')">
+      <button onclick="doSet()"   class="flex1">SET</button>
+      <button onclick="doReset()" id="resetBtn" class="flex1">RESET</button>
+    </div>
+  </div>
+</div>
+
+<!-- Display Layout -->
+<div class="section" data-section-id="layout">
+  <!-- layout --><div class="section-title" onclick="toggleSection(this)"><span class="drag-handle" onmousedown="startDrag(event)">⠿</span>Display Layout</div>
+  <div class="section-body">
+    <div class="btn-row" style="margin-bottom:10px">
+      <button id="modeBtn-single" class="flex1 active-mode" onclick="setMode('single')">Single</button>
+      <button id="modeBtn-multi"  class="flex1"             onclick="setMode('multi')">Multi</button>
+    </div>
+    <div id="multiPicker" style="display:none">
+      <div class="row-label" style="margin-bottom:6px">Select timers to show:</div>
+      <div id="multiCheckboxes" class="btn-row" style="flex-wrap:wrap;gap:6px"></div>
+
+    </div>
+    <div class="toggle-row" style="margin-top:10px">
+      <input type="checkbox" id="smoothTransitionToggle" onchange="saveState()" style="width:13px;height:13px;accent-color:#00e000">
+      <span>Smooth transition on display change</span>
+    </div>
+  </div>
+</div>
+
+<!-- Multi timer set times (shown in multi mode) -->
+<div id="multiSetTimes" style="display:none"></div>
+
+<!-- Text Editor -->
+<div class="section collapsed" data-section-id="texteditor">
+  <!-- texteditor --><div class="section-title" onclick="toggleSection(this)"><span class="drag-handle" onmousedown="startDrag(event)">⠿</span>Text Editor</div>
+  <div class="section-body">
+    <div class="settings-grid">
+
+      <label>Role name:</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="text" id="setLabelSelected" value="Appellant" oninput="applySelectedLabel()" style="flex:1">
+        <label class="text-editor-label">
+          <input type="checkbox" id="showRoleToggle" checked onchange="saveState()" style="width:13px;height:13px;accent-color:#00e000">
+          Show
+        </label>
+      </div>
+
+      <label>Header text:</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="text" id="setSubLabel" value="Time Remaining:" oninput="saveState()" style="flex:1">
+        <label class="text-editor-label">
+          <input type="checkbox" id="showSubLabelToggle" checked onchange="saveState()" style="width:13px;height:13px;accent-color:#00e000">
+          Show
+        </label>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Adjust -->
+<div class="section" data-section-id="adjust">
+  <!-- adjust --><div class="section-title" onclick="toggleSection(this)"><span class="drag-handle" onmousedown="startDrag(event)">⠿</span>Adjust time</div>
+  <div class="section-body">
+    <div class="btn-row" style="margin-bottom:8px">
+      <button onclick="doAdjust(30)"  class="flex1">+30s</button>
+      <button onclick="doAdjust(15)"  class="flex1">+15s</button>
+      <button onclick="doAdjust(-15)" class="flex1">-15s</button>
+      <button onclick="doAdjust(-30)" class="flex1">-30s</button>
+    </div>
+    <div class="set-row">
+      <span class="row-label">Custom:</span>
+      <input type="number" id="customAdjust" value="10" min="1" max="3600" style="width:70px">
+      <span class="row-label">sec</span>
+      <button onclick="doAdjust(parseInt(document.getElementById('customAdjust').value)||0)" class="flex1">+</button>
+      <button onclick="doAdjust(-(parseInt(document.getElementById('customAdjust').value)||0))" class="flex1">-</button>
+    </div>
+  </div>
+</div>
+
+<!-- Color Settings -->
+<div class="section collapsed" data-section-id="colors">
+  <!-- colors --><div class="section-title" onclick="toggleSection(this)"><span class="drag-handle" onmousedown="startDrag(event)">⠿</span>Color Settings</div>
+  <div class="section-body">
+
+    <div class="subsection-title" id="yellowTitle">🟡 Yellow — at 5:00</div>
+    <div class="settings-grid">
+      <label style="color:#777;font-size:11px;grid-column:1/-1;margin-top:2px">— When to trigger —</label>
+      <label>5 min warn:</label>
+      <div class="toggle-row">
+        <input type="checkbox" id="warnToggle" checked onchange="saveState(); renderUI()">
+        <span>Warn at 5 minutes</span>
+      </div>
+      <label>50% warn:</label>
+      <div class="toggle-row">
+        <input type="checkbox" id="halfWarnToggle" onchange="saveState(); renderUI()">
+        <span>Warn at 50% of set time</span>
+      </div>
+      <label style="color:#777;font-size:11px;grid-column:1/-1;margin-top:6px">— Border —</label>
+      <label>Show border:</label>
+      <div class="toggle-row">
+        <input type="checkbox" id="warnBorderToggle" checked onchange="saveState()">
+        <span>Yellow border highlight</span>
+      </div>
+      <label>Flash border:</label>
+      <div class="toggle-row">
+        <input type="checkbox" id="warnPulseToggle" onchange="saveState()">
+        <span>Animated flash border</span>
+      </div>
+      <label style="color:#777;font-size:11px;grid-column:1/-1;margin-top:6px">— Text —</label>
+      <label>Flash text:</label>
+      <div class="toggle-row">
+        <input type="checkbox" id="warnTextFlashToggle" onchange="saveState()">
+        <span>Flash yellow↔white</span>
+      </div>
+      <label>Strobe text:</label>
+      <div class="toggle-row">
+        <input type="checkbox" id="warnStrobeToggle" onchange="saveState()">
+        <span>Strobe yellow↔bright yellow</span>
+      </div>
+    </div>
+
+    <div class="subsection-title" style="margin-top:14px">🔴 Red (00:00)</div>
+    <div class="settings-grid">
+      <label style="color:#777;font-size:11px;grid-column:1/-1;margin-top:2px">— Border —</label>
+      <label>Show border:</label>
+      <div class="toggle-row">
+        <input type="checkbox" id="dangerBorderToggle" checked onchange="saveState()">
+        <span>Red border highlight</span>
+      </div>
+      <label>Flash border:</label>
+      <div class="toggle-row">
+        <input type="checkbox" id="pulseToggle" checked onchange="saveState()">
+        <span>Animated flash border</span>
+      </div>
+      <label style="color:#777;font-size:11px;grid-column:1/-1;margin-top:6px">— Text —</label>
+      <label>Blink digits:</label>
+      <div class="toggle-row">
+        <input type="checkbox" id="blinkToggle" checked onchange="saveState()">
+        <span>Blink on/off at 00:00</span>
+      </div>
+      <label>Flash text:</label>
+      <div class="toggle-row">
+        <input type="checkbox" id="dangerTextFlashToggle" onchange="saveState()">
+        <span>Flash red↔white</span>
+      </div>
+      <label>Strobe text:</label>
+      <div class="toggle-row">
+        <input type="checkbox" id="dangerStrobeToggle" onchange="saveState()">
+        <span>Strobe red↔bright red</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const DEFAULT_WARN_AT = 5 * 60;
+  const CORE_COUNT = 3; // first 3 timers can't be deleted
+
+  // ── State ──────────────────────────────────────────
+  const timers = [
+    { remainingAtStart: 1200, setAt: 1200, startedAt: null, running: false, label: 'Appellant', warnAt: 300 },
+    { remainingAtStart: 1200, setAt: 1200, startedAt: null, running: false, label: 'Appellee',  warnAt: 300 },
+    { remainingAtStart: 600, setAt: 600, startedAt: null, running: false, label: 'Rebuttal',  warnAt: 300 },
+  ];
+  let selected   = 0;
+  let displayed  = 0;
+  let extraCount = 0;
+  let multiMode   = false;
+  let multiTimers = [0]; // indices of timers shown in multi mode
+
+  // ── Layout mode ────────────────────────────────────
+  function setMode(mode) {
+    multiMode = mode === 'multi';
+    document.getElementById('modeBtn-single').classList.toggle('active-mode', !multiMode);
+    document.getElementById('modeBtn-multi').classList.toggle('active-mode',   multiMode);
+    document.getElementById('multiPicker').style.display = multiMode ? 'block' : 'none';
+    if (multiMode) buildMultiPicker();
+    else { document.getElementById('multiSetTimes').style.display = 'none'; document.getElementById('multiSetTimes').innerHTML = ''; }
+    saveState();
+  }
+
+  // Full rebuild of multi picker — only when timer count changes
+  function buildMultiPicker() {
+    const container = document.getElementById('multiCheckboxes');
+    container.innerHTML = '';
+    timers.forEach((t, i) => {
+      const label = document.createElement('label');
+      label.className = 'multi-cb-label';
+      label.dataset.tidx = i;
+      const cb = document.createElement('input');
+      cb.type    = 'checkbox';
+      cb.checked = multiTimers.includes(i);
+      cb.addEventListener('change', () => {
+        if (cb.checked) {
+          if (!multiTimers.includes(i)) multiTimers.push(i);
+          multiTimers.sort((a, b) => a - b);
+        } else {
+          multiTimers = multiTimers.filter(x => x !== i);
+          if (multiTimers.length === 0) multiTimers = [0];
+        }
+        renderMultiSetTimes();
+        saveState();
+      });
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(t.label));
+      container.appendChild(label);
+    });
+    renderMultiSetTimes();
+  }
+
+  // Lightweight update — just syncs checked state and label text each tick
+  function renderMultiPicker() {
+    const container = document.getElementById('multiCheckboxes');
+    const labels    = container.querySelectorAll('label[data-tidx]');
+
+    // If count doesn't match, do a full rebuild
+    if (labels.length !== timers.length) {
+      buildMultiPicker();
+      return;
+    }
+
+    labels.forEach(label => {
+      const i  = parseInt(label.dataset.tidx);
+      const cb = label.querySelector('input[type=checkbox]');
+      if (cb) cb.checked = multiTimers.includes(i);
+      // Update label text (last text node)
+      const textNode = [...label.childNodes].find(n => n.nodeType === 3);
+      if (textNode) textNode.textContent = timers[i] ? timers[i].label : '';
+    });
+  }
+
+  function renderMultiSetTimes() {
+    const container = document.getElementById('multiSetTimes');
+    if (!multiMode || multiTimers.length === 0) {
+      container.style.display = 'none';
+      container.innerHTML = '';
+      return;
+    }
+    container.style.display = 'block';
+
+    // Add rows for newly checked timers, remove rows for unchecked
+    const existingIds = Array.from(container.querySelectorAll('.multi-timer-row'))
+      .map(r => parseInt(r.dataset.tidx));
+
+    // Remove rows no longer in multiTimers
+    existingIds.forEach(id => {
+      if (!multiTimers.includes(id)) {
+        const row = container.querySelector(`.multi-timer-row[data-tidx="${id}"]`);
+        if (row) row.remove();
+      }
+    });
+
+    // Add rows for new timers in order
+    multiTimers.forEach((i, pos) => {
+      if (!existingIds.includes(i)) {
+        const t   = timers[i];
+        const rem = getRemaining(i);
+        const row = document.createElement('div');
+        row.className    = 'multi-timer-row';
+        row.dataset.tidx = i;
+        row.innerHTML = `
+          <span class="row-name" title="Click to rename">${t.label}</span>
+          <span class="readout-mini" id="mini-time-${i}">${fmt(rem)}</span>
+          <input type="text" inputmode="numeric" id="mini-min-${i}" value="${Math.floor(rem/60)}"
+            class="multi-input"
+            onblur="this.value=parseInt(this.value)||0">
+          <span class="row-label">:</span>
+          <input type="text" inputmode="numeric" id="mini-sec-${i}" value="${String(Math.floor(rem%60)).padStart(2,'0')}"
+            class="multi-input"
+            onblur="this.value=String(Math.min(59,parseInt(this.value)||0)).padStart(2,'0')">
+          <button onclick="multiSetTimer(${i})" style="padding:6px 12px;font-size:13px">SET</button>
+          <button onclick="multiResetTimer(${i})" style="padding:6px 12px;font-size:13px">RESET</button>
+          <button id="mini-start-${i}" onclick="multiToggleTimer(${i})" style="padding:6px 14px;font-size:13px">${t.running ? 'PAUSE' : 'START'}</button>
+        `;
+        // Bind inline label edit
+        const nameSpan = row.querySelector('.row-name');
+        nameSpan.addEventListener('click', () => startInlineLabelEdit(nameSpan, i));
+        // Enter key on either input triggers set
+        [row.querySelector('#mini-min-' + i), row.querySelector('#mini-sec-' + i)].forEach(inp => {
+          inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); multiSetTimer(i); inp.blur(); } });
+        });
+        // Insert in correct position
+        const rows = container.querySelectorAll('.multi-timer-row');
+        if (rows.length === 0 || pos >= rows.length) {
+          container.appendChild(row);
+        } else {
+          container.insertBefore(row, rows[pos]);
+        }
+      }
+    });
+  }
+
+  function multiSetTimer(i) {
+    const t    = timers[i];
+    const mins = parseInt(document.getElementById('mini-min-' + i).value) || 0;
+    const secs = parseInt(document.getElementById('mini-sec-' + i).value) || 0;
+    const total = mins * 60 + secs;
+    t.running          = false;
+    t.startedAt        = null;
+    t.remainingAtStart = total;
+    t.setAt            = total;
+    t.warnAt = halfOn() ? Math.floor(total / 2) : DEFAULT_WARN_AT;
+    saveState();
+    renderUI();
+  }
+
+  function multiResetTimer(i) { multiSetTimer(i); }
+
+  function multiToggleTimer(i) {
+    const t   = timers[i];
+    const rem = getRemaining(i);
+    if (rem <= 0) return;
+    if (t.running) {
+      t.remainingAtStart = rem;
+      t.startedAt        = null;
+      t.running          = false;
+    } else {
+      t.remainingAtStart = rem;
+      t.startedAt        = Date.now();
+      t.running          = true;
+    }
+    saveState();
+    renderUI();
+  }
+
+  // ── Computed remaining ─────────────────────────────
+  function getRemaining(i) {
+    const t = timers[i];
+    if (!t.running) return Math.max(0, t.remainingAtStart);
+    const elapsed = (Date.now() - t.startedAt) / 1000;
+    return Math.max(0, t.remainingAtStart - elapsed);
+  }
+
+  // ── Helpers ────────────────────────────────────────
+  function fmt(s) {
+    s = Math.max(0, Math.floor(s));
+    return String(Math.floor(s / 60)).padStart(2,'0') + ':' + String(s % 60).padStart(2,'0');
+  }
+
+  function warnOn()  { return document.getElementById('warnToggle').checked === true; }
+  function halfOn()  { return document.getElementById('halfWarnToggle').checked === true; }
+
+  function getEffectiveWarnAt(i) {
+    const candidates = [];
+    if (warnOn())  candidates.push(DEFAULT_WARN_AT);
+    if (halfOn())  candidates.push(Math.floor(timers[i].setAt / 2));
+    if (candidates.length === 0) return -1;
+    return Math.max(...candidates);
+  }
+
+  function getState(i) {
+    const rem    = getRemaining(i);
+    if (rem <= 0) return 'danger';
+    const warnAt = getEffectiveWarnAt(i);
+    if (warnAt >= 0 && rem <= warnAt) return 'warning';
+    return 'normal';
+  }
+
+  // ── Section collapse ───────────────────────────────
+  function toggleSection(titleEl) {
+    titleEl.closest('.section').classList.toggle('collapsed');
+  }
+
+  // ── Add / Remove timers ────────────────────────────
+  function addTimer() {
+    extraCount++;
+    const label = 'Appellee ' + (extraCount + 1);
+    timers.push({ remainingAtStart: 600, setAt: 600, startedAt: null, running: false, label, warnAt: 300 });
+    buildTabs();
+    selectTimer(timers.length - 1);
+    saveState();
+  }
+
+  function removeTimer(i) {
+    if (i < CORE_COUNT) return;
+    if (timers[i].running) clearTimerInterval(i);
+    timers.splice(i, 1);
+    if (displayed >= timers.length) displayed = timers.length - 1;
+    if (selected  >= timers.length) selected  = timers.length - 1;
+    buildTabs();
+    syncInputs();
+    saveState();
+    renderUI();
+  }
+
+  function clearTimerInterval(i) {
+    timers[i].running = false;
+    timers[i].startedAt = null;
+  }
+
+  // ── Tab rendering ──────────────────────────────────
+  // Full rebuild — only when timer count changes
+  function updateKbdHints() {
+    const n = Math.min(timers.length, 6);
+    const keys = Array.from({length: n}, (_, i) => i + 1).join(' ');
+    ['kbdTimerHint1','kbdTimerHint2'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = keys;
+    });
+  }
+
+  function buildTabs() {
+    const coreRow  = document.getElementById('coreTabRow');
+    const extraRow = document.getElementById('extraTabRow');
+    const addBtn   = document.getElementById('addTimerBtn');
+
+    coreRow.querySelectorAll('.tab').forEach(t => t.remove());
+    extraRow.querySelectorAll('.tab').forEach(t => t.remove());
+
+    const hasExtras = timers.length > CORE_COUNT;
+    extraRow.style.display = hasExtras ? 'flex' : 'none';
+
+    timers.forEach((t, i) => {
+      const btn = document.createElement('button');
+      btn.className    = 'tab';
+      btn.dataset.tidx = i;
+
+      const labelSpan = document.createElement('span');
+      labelSpan.className   = 'tab-label';
+      labelSpan.textContent = t.label;
+      btn.appendChild(labelSpan);
+      btn.addEventListener('click', () => selectTimer(i));
+      // Double-click the tab to rename the timer inline
+      btn.addEventListener('dblclick', (e) => { e.preventDefault(); startInlineLabelEdit(labelSpan, i); });
+
+      if (i >= CORE_COUNT) {
+        const x = document.createElement('button');
+        x.className   = 'tab-close';
+        x.textContent = '\u2715';
+        x.title       = 'Remove timer';
+        x.addEventListener('click', e => { e.stopPropagation(); removeTimer(i); });
+        btn.appendChild(x);
+        extraRow.appendChild(btn);
+      } else {
+        coreRow.insertBefore(btn, addBtn);
+      }
+    });
+    if (multiMode) buildMultiPicker();
+  }
+
+  // Light update — just refreshes classes/labels on existing tabs each tick
+  function renderTabs() {
+    const coreRow  = document.getElementById('coreTabRow');
+    const extraRow = document.getElementById('extraTabRow');
+    const allTabs  = [
+      ...coreRow.querySelectorAll('.tab'),
+      ...extraRow.querySelectorAll('.tab')
+    ];
+
+    // If count doesn't match, do a full rebuild first
+    if (allTabs.length !== timers.length) {
+      buildTabs();
+      renderTabs();
+      return;
+    }
+
+    timers.forEach((t, i) => {
+      const btn = allTabs[i];
+      if (!btn) return;
+      const s = getState(i);
+      btn.classList.toggle('active',     i === selected);
+      btn.classList.toggle('on-display', i === displayed);
+      btn.classList.toggle('warning',    s === 'warning');
+      btn.classList.toggle('danger',     s === 'danger');
+      const labelSpan = btn.querySelector('.tab-label');
+      // Don't clobber the label while it's being renamed inline
+      if (labelSpan && !labelSpan.querySelector('input')) labelSpan.textContent = t.label;
+    });
+
+    if (multiMode) renderMultiPicker();
+    updateKbdHints();
+  }
+
+  // ── localStorage sync ──────────────────────────────
+  let _lastSaved = '';
+
+  function buildStateObj() {
+    return {
+      timers: timers.map((t, i) => ({
+        remainingAtStart: getRemaining(i),
+        setAt:            t.setAt,
+        startedAt:        t.running ? Date.now() : null,
+        running:          t.running,
+        label:            t.label,
+        warnAt:           getEffectiveWarnAt(i),
+      })),
+      displayed,
+      multiMode,
+      multiTimers,
+      warnOn:            warnOn(),
+      showRole:          document.getElementById('showRoleToggle').checked,
+      showSubLabel:      document.getElementById('showSubLabelToggle').checked,
+      warnBorderOn:      document.getElementById('warnBorderToggle').checked,
+      warnPulseOn:       document.getElementById('warnPulseToggle').checked,
+      warnTextFlashOn:   document.getElementById('warnTextFlashToggle').checked,
+      warnStrobeOn:      document.getElementById('warnStrobeToggle').checked,
+      dangerBorderOn:    document.getElementById('dangerBorderToggle').checked,
+      pulseOn:           document.getElementById('pulseToggle').checked,
+      blinkOn:           document.getElementById('blinkToggle').checked,
+      dangerTextFlashOn: document.getElementById('dangerTextFlashToggle').checked,
+      dangerStrobeOn:    document.getElementById('dangerStrobeToggle').checked,
+      subLabel:          document.getElementById('setSubLabel').value || 'Time Remaining:',
+      smoothTransition:  document.getElementById('smoothTransitionToggle').checked,
+    };
+  }
+
+  function saveState(force) {
+    const state = buildStateObj();
+    // Only write to localStorage when something meaningful changed.
+    // For running timers we compare everything except the live remainingAtStart
+    // (which changes every tick) — we only re-serialize when a non-time field
+    // changes, or when a timer starts/stops/is adjusted.
+    const key = JSON.stringify({
+      ...state,
+      timers: state.timers.map(t => ({ ...t, remainingAtStart: t.running ? '__running__' : t.remainingAtStart }))
+    });
+    if (!force && key === _lastSaved) return;
+    _lastSaved = key;
+    localStorage.setItem('test_courtTimerState', JSON.stringify(state));
+  }
+
+  // ── Actions ────────────────────────────────────────
+  function doToggle() {
+    const t   = timers[selected];
+    const rem = getRemaining(selected);
+    if (rem <= 0) return;
+    if (t.running) {
+      t.remainingAtStart = rem;
+      t.startedAt        = null;
+      t.running          = false;
+    } else {
+      t.remainingAtStart = rem;
+      t.startedAt        = Date.now();
+      t.running          = true;
+    }
+    saveState(true);
+    renderUI();
+  }
+
+  function doDisplay() {
+    displayed = selected;
+    saveState(true);
+    renderUI();
+  }
+
+  function doAdjust(delta) {
+    const t = timers[selected];
+    const newRem = Math.max(0, getRemaining(selected) + delta);
+    t.remainingAtStart = newRem;
+    if (t.running) t.startedAt = Date.now();
+    syncInputs();
+    saveState(true);
+    renderUI();
+  }
+
+  function doSet() {
+    const t = timers[selected];
+    const secs = (parseInt(document.getElementById('minInput').value) || 0) * 60
+               + (parseInt(document.getElementById('secInput').value) || 0);
+    t.running          = false;
+    t.startedAt        = null;
+    t.remainingAtStart = secs;
+    t.setAt            = secs;
+    t.warnAt = halfOn() ? Math.floor(secs / 2) : DEFAULT_WARN_AT;
+    saveState(true);
+    renderUI();
+    // Subtle flash on the readout to confirm the new time
+    const ro = document.getElementById('readout-time');
+    ro.classList.remove('set-flash');
+    void ro.offsetWidth; // reflow to restart animation
+    ro.classList.add('set-flash');
+    ro.addEventListener('animationend', () => ro.classList.remove('set-flash'), { once: true });
+  }
+
+  function confirmReset(btn) {
+    // Shared confirm-then-reset logic for any reset button
+    if (btn.dataset.confirming === '1') {
+      btn.dataset.confirming = '0';
+      btn.textContent = 'RESET';
+      btn.style.background  = '';
+      btn.style.color       = '';
+      btn.style.borderColor = '';
+      clearTimeout(btn._confirmTimer);
+      doSet();
+    } else {
+      btn.dataset.confirming = '1';
+      btn.textContent = 'CONFIRM?';
+      btn.style.background  = '#3a0000';
+      btn.style.color       = '#e03030';
+      btn.style.borderColor = '#5a0000';
+      btn._confirmTimer = setTimeout(() => {
+        btn.dataset.confirming = '0';
+        btn.textContent = 'RESET';
+        btn.style.background  = '';
+        btn.style.color       = '';
+        btn.style.borderColor = '';
+      }, 2000);
+    }
+  }
+
+  function doReset(btnEl) {
+    const t = timers[selected];
+    // Resolve which button was clicked — passed in or fall back to #resetBtn
+    const btn = btnEl || document.getElementById('resetBtn');
+    if (t.running) {
+      confirmReset(btn);
+    } else {
+      doSet();
+    }
+  }
+
+  function applySelectedLabel() {
+    const val = document.getElementById('setLabelSelected').value.trim();
+    if (!val) return;
+    timers[selected].label = val;
+    renderTabs();
+    saveState();
+    renderUI();
+  }
+
+  function startInlineLabelEdit(spanEl, timerIdx) {
+    if (spanEl.querySelector('.row-name-input')) return; // already editing
+    const currentLabel = timers[timerIdx].label;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'row-name-input';
+    input.value = currentLabel;
+    input.spellcheck = false;
+
+    // Replace the span text with the input
+    const originalText = spanEl.textContent;
+    spanEl.textContent = '';
+    spanEl.appendChild(input);
+    input.focus();
+    input.select();
+
+    function commitEdit() {
+      const newLabel = input.value.trim();
+      spanEl.textContent = newLabel || originalText;
+      if (newLabel && newLabel !== currentLabel) {
+        timers[timerIdx].label = newLabel;
+        // Sync Text Editor label input if this timer is currently selected
+        if (timerIdx === selected) {
+          document.getElementById('setLabelSelected').value = newLabel;
+        }
+        renderTabs();
+        saveState();
+        renderUI();
+      } else {
+        spanEl.textContent = currentLabel;
+      }
+    }
+
+    function cancelEdit() {
+      spanEl.textContent = currentLabel;
+    }
+
+    input.addEventListener('blur', commitEdit);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); input.removeEventListener('blur', commitEdit); commitEdit(); }
+      if (e.key === 'Escape') { e.preventDefault(); input.removeEventListener('blur', commitEdit); cancelEdit(); }
+    });
+  }
+
+  function selectTimer(i) {
+    selected = i;
+    // Sync label input to selected timer
+    document.getElementById('setLabelSelected').value = timers[i].label;
+    syncInputs();
+    renderUI();
+  }
+
+  function syncInputs() {
+    // Always show the original setAt value, not the live/paused remaining time
+    const setAt = timers[selected].setAt || 0;
+    const setM = Math.floor(setAt / 60);
+    const setS = Math.floor(setAt % 60);
+    document.getElementById('minInput').value = setM;
+    document.getElementById('secInput').value = String(setS).padStart(2, '0');
+    // Keep simple mode inputs in sync
+    const sm = document.getElementById('simpleMin');
+    const ss = document.getElementById('simpleSec');
+    if (sm) sm.value = setM;
+    if (ss) ss.value = String(setS).padStart(2, '0');
+  }
+
+  function doSimpleSet() {
+    // Mirror values into the main inputs then reuse doSet()
+    const m = parseInt(document.getElementById('simpleMin').value) || 0;
+    const s = parseInt(document.getElementById('simpleSec').value) || 0;
+    document.getElementById('minInput').value = m;
+    document.getElementById('secInput').value = s;
+    doSet();
+  }
+
+  // ── Render ─────────────────────────────────────────
+  function renderUI() {
+    const state = getState(selected);
+    const t     = timers[selected];
+
+    // Auto-stop if expired
+    if (t.running && getRemaining(selected) <= 0) {
+      t.remainingAtStart = 0;
+      t.startedAt        = null;
+      t.running          = false;
+      saveState();
+    }
+
+    renderTabs();
+
+    // Readout
+    const ro = document.getElementById('readout-time');
+    ro.textContent = fmt(getRemaining(selected));
+    ro.classList.remove('warning', 'danger');
+    if (state === 'warning') ro.classList.add('warning');
+    if (state === 'danger')  ro.classList.add('danger');
+
+    const isOnDisplay = selected === displayed;
+    const dispStr = isOnDisplay ? 'ON DISPLAY' : 'not on display';
+    const metaEl  = document.getElementById('readout-meta');
+    metaEl.textContent = dispStr;
+    metaEl.classList.toggle('on-display', isOnDisplay);
+    const labelEl = document.getElementById('readout-label');
+    if (labelEl) labelEl.textContent = t.label.toUpperCase();
+
+    // Buttons
+    const startBtn = document.getElementById('startBtn');
+    startBtn.textContent = t.running ? 'PAUSE' : 'START';
+    startBtn.classList.toggle('running',    t.running);
+    document.getElementById('displayBtn').classList.toggle('on-display', selected === displayed);
+
+    // Sync simple mode buttons
+    const simpleStart = document.getElementById('simpleStartBtn');
+    const simpleDisp  = document.getElementById('simpleDisplayBtn');
+    if (simpleStart) { simpleStart.textContent = t.running ? 'PAUSE' : 'START'; simpleStart.classList.toggle('running', t.running); }
+    if (simpleDisp)  { simpleDisp.classList.toggle('on-display', selected === displayed); }
+
+    // Freeze Set Time inputs while running so they don't jump around
+    const minInput = document.getElementById('minInput');
+    const secInput = document.getElementById('secInput');
+    minInput.classList.toggle('frozen', t.running);
+    secInput.classList.toggle('frozen', t.running);
+    minInput.readOnly = t.running;
+    secInput.readOnly = t.running;
+
+    // Yellow title
+    const parts = [];
+    if (warnOn())  parts.push('5:00');
+    if (halfOn())  parts.push('50% (' + fmt(Math.floor(timers[selected].setAt / 2)) + ')');
+    const warnStr = parts.length > 0 ? parts.join(' & ') : 'disabled';
+    document.getElementById('yellowTitle').textContent = '🟡 Yellow — at ' + warnStr;
+
+    // Update mini readouts for multi set time rows (never touch inputs)
+    multiTimers.forEach(i => {
+      const miniEl  = document.getElementById('mini-time-'  + i);
+      const startEl = document.getElementById('mini-start-' + i);
+      if (!miniEl) return;
+      const s = getState(i);
+      miniEl.textContent = fmt(getRemaining(i));
+      miniEl.className   = 'readout-mini' + (s === 'danger' ? ' danger' : s === 'warning' ? ' warning' : '');
+      if (startEl) {
+        const running = timers[i].running;
+        startEl.textContent       = running ? 'PAUSE' : 'START';
+        startEl.style.background  = running ? '#3a0000' : '';
+        startEl.style.color       = running ? '#e03030' : '';
+        startEl.style.borderColor = running ? '#5a0000' : '';
+      }
+    });
+  }
+
+  // ── Main loop ──────────────────────────────────────
+  function loop() {
+    saveState();
+    renderUI();
+  }
+
+  setInterval(loop, 250);
+
+  // ── Restore saved state ────────────────────────────
+  function loadState() {
+    let state;
+    try { state = JSON.parse(localStorage.getItem('test_courtTimerState')); }
+    catch (e) { return; }
+    if (!state) return;
+
+    // Restore timers (this is what was being lost on reload)
+    if (Array.isArray(state.timers) && state.timers.length) {
+      timers.length = 0;
+      state.timers.forEach(t => {
+        timers.push({
+          remainingAtStart: typeof t.remainingAtStart === 'number' ? t.remainingAtStart : (t.setAt || 0),
+          setAt:            typeof t.setAt === 'number' ? t.setAt : (t.remainingAtStart || 0),
+          startedAt:        t.running ? (t.startedAt || Date.now()) : null,
+          running:          !!t.running,
+          label:            t.label || 'Timer',
+          warnAt:           typeof t.warnAt === 'number' ? t.warnAt : DEFAULT_WARN_AT,
+        });
+      });
+      // Keep auto-naming of future timers consistent with how many extras exist
+      extraCount = Math.max(0, timers.length - CORE_COUNT);
+    }
+
+    // Restore selection / display / layout
+    if (typeof state.displayed === 'number' && state.displayed < timers.length) displayed = state.displayed;
+    if (Array.isArray(state.multiTimers) && state.multiTimers.length) {
+      multiTimers = state.multiTimers.filter(i => i < timers.length);
+      if (!multiTimers.length) multiTimers = [0];
+    }
+    multiMode = state.multiMode === true;
+
+    // Restore toggles / text fields (only when the element exists)
+    const setChk = (id, val) => { const el = document.getElementById(id); if (el && typeof val === 'boolean') el.checked = val; };
+    setChk('warnToggle',            state.warnOn);
+    setChk('showRoleToggle',        state.showRole);
+    setChk('showSubLabelToggle',    state.showSubLabel);
+    setChk('warnBorderToggle',      state.warnBorderOn);
+    setChk('warnPulseToggle',       state.warnPulseOn);
+    setChk('warnTextFlashToggle',   state.warnTextFlashOn);
+    setChk('warnStrobeToggle',      state.warnStrobeOn);
+    setChk('dangerBorderToggle',    state.dangerBorderOn);
+    setChk('pulseToggle',           state.pulseOn);
+    setChk('blinkToggle',           state.blinkOn);
+    setChk('dangerTextFlashToggle', state.dangerTextFlashOn);
+    setChk('dangerStrobeToggle',    state.dangerStrobeOn);
+    setChk('smoothTransitionToggle', state.smoothTransition);
+    const subEl = document.getElementById('setSubLabel');
+    if (subEl && typeof state.subLabel === 'string') subEl.value = state.subLabel;
+  }
+
+  // ── Init ───────────────────────────────────────────
+  loadState();
+  buildTabs();
+  if (multiMode) setMode('multi');
+  renderTabs();
+  syncInputs();
+  renderUI();
+  saveState(true);
+
+  // ── Keyboard shortcuts ─────────────────────────────
+  // Space = start/pause selected timer
+  // D     = display selected timer
+  // 1/2/3 = select timer by index
+  document.addEventListener('keydown', (e) => {
+    // Don't fire if user is typing in an input or textarea
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+    if (e.code === 'Space') {
+      e.preventDefault();
+      doToggle();
+    } else if (e.key === 'd' || e.key === 'D') {
+      doDisplay();
+    } else if (e.key >= '1' && e.key <= '6') {
+      const idx = parseInt(e.key) - 1;
+      if (timers[idx]) selectTimer(idx);
+    }
+  });
+
+  // ── Enter key to set time ──────────────────────────
+
+  ['minInput','secInput'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); doSet(); e.target.blur(); }
+    });
+  });
+  ['simpleMin','simpleSec'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); doSimpleSet(); e.target.blur(); }
+    });
+  });
+
+  // ── Section drag & drop reordering ────────────────
+  let dragSrc         = null;
+  let dragGhost       = null;
+  let dragPlaceholder = null;
+  let dragOffsetY     = 0;
+
+  function startDrag(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    const section = e.target.closest('.section');
+    if (!section || section.dataset.hidden === 'true') return;
+
+    const container = document.getElementById('sectionContainer');
+    const startY    = e.touches ? e.touches[0].clientY : e.clientY;
+    const rect      = section.getBoundingClientRect();
+    dragOffsetY     = startY - rect.top;
+    dragSrc         = section;
+
+    // Placeholder — same height as dragged section, holds the drop slot
+    dragPlaceholder = document.createElement('div');
+    dragPlaceholder.style.height      = rect.height + 'px';
+    dragPlaceholder.style.border      = '2px dashed var(--accent)';
+    dragPlaceholder.style.borderRadius = '7px';
+    dragPlaceholder.style.background  = 'var(--accent-bg)';
+    dragPlaceholder.style.opacity     = '0.4';
+    dragPlaceholder.style.margin      = '10px 10px 0';
+    dragPlaceholder.style.boxSizing   = 'border-box';
+    section.parentNode.insertBefore(dragPlaceholder, section);
+
+    // Ghost — floating clone that follows the cursor
+    dragGhost = section.cloneNode(true);
+    dragGhost.style.position    = 'fixed';
+    dragGhost.style.left        = rect.left + 'px';
+    dragGhost.style.top         = rect.top  + 'px';
+    dragGhost.style.width       = rect.width + 'px';
+    dragGhost.style.zIndex      = '1000';
+    dragGhost.style.pointerEvents = 'none';
+    dragGhost.style.opacity     = '0.93';
+    dragGhost.style.boxShadow   = '0 8px 32px rgba(0,0,0,0.55)';
+    dragGhost.style.borderRadius = '7px';
+    dragGhost.style.border      = '1px solid var(--accent)';
+    document.body.appendChild(dragGhost);
+
+    // Hide original cleanly without touching cssText
+    section.style.visibility = 'hidden';
+    section.style.margin     = '0';
+    section.style.height     = '0';
+    section.style.overflow   = 'hidden';
+    section.style.border     = 'none';
+    section.style.padding    = '0';
+
+    const onMove = (ev) => {
+      ev.preventDefault();
+      const clientY = ev.touches ? ev.touches[0].clientY : ev.clientY;
+      dragGhost.style.top = (clientY - dragOffsetY) + 'px';
+
+      // Detach placeholder before measuring so heights are accurate
+      dragPlaceholder.remove();
+
+      // Get all visible non-dragged sections and their positions
+      const siblings = [...container.querySelectorAll('.section:not([data-hidden="true"])')].filter(s => s !== dragSrc);
+
+      // Find insertion point — first sibling whose midpoint is below cursor
+      let target = null;
+      for (const s of siblings) {
+        const box = s.getBoundingClientRect();
+        if (clientY < box.top + box.height / 2) { target = s; break; }
+      }
+
+      // If cursor is above every sibling, force insert before the first one
+      if (!target && siblings.length > 0) {
+        const firstBox = siblings[0].getBoundingClientRect();
+        if (clientY < firstBox.bottom) target = siblings[0];
+      }
+
+      if (target) container.insertBefore(dragPlaceholder, target);
+      else        container.appendChild(dragPlaceholder);
+    };
+
+    const onUp = () => {
+      dragPlaceholder.parentNode.insertBefore(dragSrc, dragPlaceholder);
+      dragPlaceholder.remove();
+      dragGhost.remove();
+
+      // Restore section to normal
+      dragSrc.style.visibility = '';
+      dragSrc.style.margin     = '';
+      dragSrc.style.height     = '';
+      dragSrc.style.overflow   = '';
+      dragSrc.style.border     = '';
+      dragSrc.style.padding    = '';
+
+      saveSectionOrder();
+      dragSrc = dragGhost = dragPlaceholder = null;
+
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup',   onUp);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend',  onUp);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend',  onUp);
+  }
+
+  function saveSectionOrder() {
+    const order = [...document.querySelectorAll('#sectionContainer .section')]
+      .map(s => s.dataset.sectionId)
+      .filter(Boolean);
+    localStorage.setItem('test_courtTimerSectionOrder', JSON.stringify(order));
+  }
+
+  function restoreSectionOrder() {
+    try {
+      const DEFAULT_ORDER = ['playback','settime','layout','texteditor','adjust','colors','caseinfo'];
+      const saved = JSON.parse(localStorage.getItem('test_courtTimerSectionOrder'));
+      // If nothing saved, or saved order doesn't contain all current sections,
+      // clear it so the HTML default order wins
+      const isValid = saved && saved.length >= DEFAULT_ORDER.length - 1
+        && DEFAULT_ORDER.every(id => saved.includes(id));
+      if (!isValid) {
+        localStorage.removeItem('test_courtTimerSectionOrder');
+        return;
+      }
+      const container = document.getElementById('sectionContainer');
+      saved.forEach(id => {
+        const section = container.querySelector(`.section[data-section-id="${id}"]`);
+        if (section) container.appendChild(section);
+      });
+    } catch(e) {}
+  }
+
+  // Restore smoothTransition from saved state
+  (function() {
+    try {
+      const saved = localStorage.getItem('test_courtTimerState');
+      if (saved) {
+        const state = JSON.parse(saved);
+        if (state.smoothTransition === true) {
+          document.getElementById('smoothTransitionToggle').checked = true;
+        }
+      }
+    } catch(e) {}
+  })();
+
+  restoreSectionOrder();
+</script>
+<!-- Case Info -->
+<div class="section collapsed" data-section-id="caseinfo">
+  <div class="section-title" onclick="toggleSection(this)"><span class="drag-handle" onmousedown="startDrag(event)">⠿</span>Case Info</div>
+  <div class="section-body">
+    <!-- Set-once case text + branding, folded away (running clock removed) -->
+    <details class="advanced-block" style="margin-bottom:12px">
+      <summary class="advanced-summary">Case text &amp; branding (set once)</summary>
+      <div class="settings-grid" style="margin:10px 0">
+
+      <label>Case title:</label>
+      <input type="text" id="caseTitle" placeholder="e.g. Smith v. State" oninput="saveCaseInfo()">
+
+      <label>Subtitle:</label>
+      <input type="text" id="caseSubtitle" placeholder="e.g. Case No. 2024-001" oninput="saveCaseInfo()">
+
+      <label>Show overlay:</label>
+      <div class="toggle-row">
+        <input type="checkbox" id="caseOverlayToggle" checked onchange="saveCaseInfo()">
+        <span>Visible on screen</span>
+      </div>
+
+      <label>Hide seal:</label>
+      <div class="toggle-row">
+        <input type="checkbox" id="hideSealToggle" onchange="saveCaseInfo()">
+        <span>Remove seal from overlay</span>
+      </div>
+
+      <label>Seal URL:</label>
+      <input type="text" id="sealUrl" value="ndseal.png" placeholder="https://... or file:///..." oninput="saveCaseInfo()" style="font-size:12px">
+
+      </div>
+
+    <div class="section-title" style="font-size:9px;margin:0 0 8px;padding:0;border:none;cursor:default;color:#555">TYPOGRAPHY</div>
+    <div class="settings-grid" style="margin-bottom:12px">
+
+      <label>Font:</label>
+      <select id="overlayFont" onchange="saveCaseInfo()" class="overlay-font-select">
+        <option value="'Times New Roman', Times, serif">Times New Roman</option>
+        <option value="Georgia, serif">Georgia</option>
+        <option value="Garamond, serif">Garamond</option>
+        <option value="'Palatino Linotype', Palatino, serif">Palatino</option>
+        <option value="Arial, sans-serif">Arial</option>
+        <option value="'Arial Narrow', sans-serif">Arial Narrow</option>
+        <option value="Helvetica, sans-serif">Helvetica</option>
+        <option value="Verdana, sans-serif">Verdana</option>
+        <option value="Impact, sans-serif">Impact</option>
+        <option value="'Courier New', Courier, monospace">Courier New</option>
+      </select>
+
+      <label>Size override:</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="toggle-row">
+          <input type="checkbox" id="overrideSizeToggle" onchange="saveCaseInfo(); toggleSizeOverride()">
+          <span style="font-size:12px">Manual size</span>
+        </div>
+      </div>
+
+      <label id="sizeScaleLabel" style="color:#555">Scale %:</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="range" id="overrideSizeRange" min="30" max="200" value="100"
+          oninput="document.getElementById('overrideSizeVal').textContent=this.value+'%'; saveCaseInfo()"
+          style="flex:1;accent-color:#00e000;cursor:pointer;opacity:0.35" disabled>
+        <span id="overrideSizeVal" style="font-size:12px;color:#555;min-width:36px">100%</span>
+      </div>
+
+    </div>
+    </details>
+
+    <div class="section-title" style="font-size:9px;margin:0 0 6px;padding:0;border:none;cursor:default;color:#555">TIME ALLOCATIONS</div>
+    <div id="allocRows"></div>
+    <button onclick="addAllocRow()" style="width:100%;margin-top:6px;font-size:13px;padding:7px">+ Add line</button>
+
+    <div style="margin-top:14px;border-top:1px solid #222;padding-top:12px">
+      <div class="section-title" style="font-size:9px;margin:0 0 8px;padding:0;border:none;cursor:default;color:#555">PRESETS <span style="color:#444;font-size:8px;letter-spacing:0.1em">(SAVES EVERYTHING — TEXT + TIMERS + ADDED TIMERS)</span></div>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <input type="text" id="sessionPresetNameInput" placeholder="e.g. Smith v. State" class="preset-name-input">
+        <button onclick="saveSessionPreset()" class="btn-save-session">Save</button>
+      </div>
+      <div id="sessionPresetList" style="display:flex;flex-direction:column;gap:5px"></div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- end sectionContainer -->
+
+<script>
+  // ── Case Info ──────────────────────────────────────
+  let allocations = ['Appellant - 20 min.', 'Appellee - 20 min.', 'Rebuttal - 10 min.'];
+
+  function saveCaseInfo() {
+    const overrideSize = document.getElementById('overrideSizeToggle').checked;
+    const info = {
+      sealUrl:      document.getElementById('sealUrl').value.trim(),
+      hideSeal:     document.getElementById('hideSealToggle').checked,
+      caseTitle:    document.getElementById('caseTitle').value,
+      caseSubtitle: document.getElementById('caseSubtitle').value,
+      allocations,
+      visible:      document.getElementById('caseOverlayToggle').checked,
+      fontFamily:   document.getElementById('overlayFont').value,
+      sizeScale:    overrideSize ? (parseInt(document.getElementById('overrideSizeRange').value) || 100) : 100,
+      overrideSize,
+    };
+    localStorage.setItem('test_courtCaseInfo', JSON.stringify(info));
+  }
+
+  function toggleSizeOverride() {
+    const on      = document.getElementById('overrideSizeToggle').checked;
+    const slider  = document.getElementById('overrideSizeRange');
+    const valSpan = document.getElementById('overrideSizeVal');
+    const label   = document.getElementById('sizeScaleLabel');
+    slider.disabled       = !on;
+    slider.style.opacity  = on ? '1' : '0.35';
+    valSpan.style.color   = on ? '#ddd' : '#555';
+    label.style.color     = on ? '#ddd' : '#555';
+  }
+
+  function addAllocRow(value = '') {
+    const container = document.getElementById('allocRows');
+    const row       = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center';
+    row.innerHTML = `
+      <input type="text" value="${value}" placeholder="e.g. Appellant - 20 min."
+        class="alloc-input"
+        oninput="updateAllocations(); saveCaseInfo()">
+      <button onclick="removeAllocRow(this)" class="btn-alloc-del">✕</button>
+    `;
+    container.appendChild(row);
+    updateAllocations();
+    saveCaseInfo();
+  }
+
+  function removeAllocRow(btn) {
+    btn.closest('div').remove();
+    updateAllocations();
+    saveCaseInfo();
+  }
+
+  function updateAllocations() {
+    allocations = [...document.querySelectorAll('#allocRows input')].map(i => i.value);
+  }
+
+  // Init default rows
+  allocations.forEach(v => addAllocRow(v));
+  saveCaseInfo(); // write defaults including seal URL to localStorage on first load
+
+  // ── Case Info Presets (case title/allocations/font only) ────────────────────
+  function getCaseSnapshot() {
+    return {
+      sealUrl:      document.getElementById('sealUrl').value.trim(),
+      hideSeal:     document.getElementById('hideSealToggle').checked,
+      caseTitle:    document.getElementById('caseTitle').value,
+      caseSubtitle: document.getElementById('caseSubtitle').value,
+      allocations:  [...document.querySelectorAll('#allocRows input')].map(i => i.value),
+      fontFamily:   document.getElementById('overlayFont').value,
+      overrideSize: document.getElementById('overrideSizeToggle').checked,
+      sizeScale:    parseInt(document.getElementById('overrideSizeRange').value) || 100,
+    };
+  }
+
+  function applyCaseSnapshot(snap) {
+    if (!snap) return;
+    document.getElementById('sealUrl').value          = snap.sealUrl      || '';
+    document.getElementById('hideSealToggle').checked  = !!snap.hideSeal;
+    document.getElementById('caseTitle').value         = snap.caseTitle    || '';
+    document.getElementById('caseSubtitle').value      = snap.caseSubtitle || '';
+    document.getElementById('allocRows').innerHTML     = '';
+    allocations = [];
+    (snap.allocations || []).forEach(v => addAllocRow(v));
+    const fontSel = document.getElementById('overlayFont');
+    if (snap.fontFamily) fontSel.value = snap.fontFamily;
+    document.getElementById('overrideSizeToggle').checked  = !!snap.overrideSize;
+    document.getElementById('overrideSizeRange').value     = snap.sizeScale || 100;
+    document.getElementById('overrideSizeVal').textContent = (snap.sizeScale || 100) + '%';
+    toggleSizeOverride();
+    saveCaseInfo();
+  }
+
+
+  // ── Presets (all-in-one: case info text + timers + added timers + layout) ──
+  function getFullSnapshot() {
+    return {
+      ...getCaseSnapshot(),
+      timerSetAt:  timers.map(t => ({ label: t.label, setAt: t.setAt })),
+      multiMode,
+      multiTimers: [...multiTimers],
+    };
+  }
+
+  function applySnapshot(snap) {
+    if (!snap) return;
+    // Case info text portion
+    applyCaseSnapshot(snap);
+    // Timers — fully rebuild the list to match the preset, including added timers
+    if (snap.timerSetAt && snap.timerSetAt.length) {
+      timers.length = 0;
+      snap.timerSetAt.forEach(entry => {
+        const secs = entry.setAt || 0;
+        timers.push({
+          remainingAtStart: secs,
+          setAt:            secs,
+          startedAt:        null,
+          running:          false,
+          label:            entry.label || 'Timer',
+          warnAt:           DEFAULT_WARN_AT,
+        });
+      });
+      // Never drop below the core timers
+      while (timers.length < CORE_COUNT) {
+        timers.push({ remainingAtStart: 600, setAt: 600, startedAt: null, running: false, label: 'Timer', warnAt: DEFAULT_WARN_AT });
+      }
+      extraCount = Math.max(0, timers.length - CORE_COUNT);
+      if (selected  >= timers.length) selected  = timers.length - 1;
+      if (displayed >= timers.length) displayed = timers.length - 1;
+    }
+    // Display mode
+    if (snap.multiMode !== undefined) {
+      multiMode   = snap.multiMode;
+      multiTimers = (snap.multiTimers ? [...snap.multiTimers] : [0]).filter(i => i < timers.length);
+      if (!multiTimers.length) multiTimers = [0];
+      setMode(multiMode ? 'multi' : 'single');
+    }
+    syncInputs();
+    buildTabs();
+    saveState(true);
+    renderUI();
+  }
+
+  function loadSessionPresets() {
+    try { return JSON.parse(localStorage.getItem('test_courtSessionPresets') || '{}'); } catch(e) { return {}; }
+  }
+
+  function saveSessionPreset() {
+    const name = document.getElementById('sessionPresetNameInput').value.trim();
+    if (!name) return;
+    const presets = loadSessionPresets();
+    presets[name] = getFullSnapshot();
+    localStorage.setItem('test_courtSessionPresets', JSON.stringify(presets));
+    document.getElementById('sessionPresetNameInput').value = '';
+    renderSessionPresets();
+  }
+
+  function deleteSessionPreset(name) {
+    const presets = loadSessionPresets();
+    delete presets[name];
+    localStorage.setItem('test_courtSessionPresets', JSON.stringify(presets));
+    renderSessionPresets();
+  }
+
+  function overwriteSessionPreset(name) {
+    const presets = loadSessionPresets();
+    presets[name] = getFullSnapshot();
+    localStorage.setItem('test_courtSessionPresets', JSON.stringify(presets));
+    renderSessionPresets();
+  }
+
+  function renameSessionPreset(oldName, newName) {
+    const presets = loadSessionPresets();
+    if (!presets[oldName]) { renderSessionPresets(); return; }
+    // Don't clobber a different existing preset with the same name
+    if (presets[newName] && newName !== oldName) { renderSessionPresets(); return; }
+    // Rebuild preserving order, swapping the key
+    const out = {};
+    Object.keys(presets).forEach(k => { out[k === oldName ? newName : k] = presets[k]; });
+    localStorage.setItem('test_courtSessionPresets', JSON.stringify(out));
+    renderSessionPresets();
+  }
+
+  // Inline-edit the preset title (pencil button)
+  function startPresetRename(oldName, loadEl) {
+    if (loadEl.querySelector('input')) return; // already editing
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'preset-rename-input';
+    input.value = oldName;
+    input.spellcheck = false;
+    loadEl.innerHTML = '';
+    loadEl.appendChild(input);
+    input.focus();
+    input.select();
+    // Stop clicks inside the input from triggering the load action
+    input.addEventListener('click',     e => e.stopPropagation());
+    input.addEventListener('mousedown', e => e.stopPropagation());
+
+    function commit() {
+      const newName = input.value.trim();
+      if (newName && newName !== oldName) renameSessionPreset(oldName, newName);
+      else renderSessionPresets();
+    }
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter')  { e.preventDefault(); input.removeEventListener('blur', commit); commit(); }
+      if (e.key === 'Escape') { e.preventDefault(); input.removeEventListener('blur', commit); renderSessionPresets(); }
+    });
+  }
+
+  // Two-step confirm so an accidental click can't clobber a saved preset
+  function confirmOverwrite(name, btn) {
+    if (btn.dataset.confirming === '1') {
+      clearTimeout(btn._confirmTimer);
+      overwriteSessionPreset(name); // re-renders the list
+    } else {
+      btn.dataset.confirming = '1';
+      btn.textContent = 'Overwrite?';
+      btn.classList.add('confirming');
+      btn._confirmTimer = setTimeout(() => {
+        btn.dataset.confirming = '0';
+        btn.textContent = 'Update';
+        btn.classList.remove('confirming');
+      }, 2500);
+    }
+  }
+
+  function renderSessionPresets() {
+    const container = document.getElementById('sessionPresetList');
+    const presets   = loadSessionPresets();
+    const names     = Object.keys(presets);
+    container.innerHTML = '';
+    if (names.length === 0) {
+      container.innerHTML = '<div style="font-size:11px;color:#555;padding:4px 0">No session presets saved yet.</div>';
+      return;
+    }
+    names.forEach(name => {
+      const snap    = presets[name];
+      const row     = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:6px';
+      const modeStr = snap.multiMode ? 'Multi' : 'Single';
+      const timeStr = snap.timerSetAt
+        ? snap.timerSetAt.map(t => Math.floor(t.setAt / 60) + 'm').join(' / ')
+        : '';
+      const subtitle = [modeStr, timeStr].filter(Boolean).join(' \u00b7 ');
+      const loadBtn = document.createElement('div');
+      loadBtn.className = 'preset-load-btn';
+      loadBtn.title = 'Click to load this preset';
+      loadBtn.innerHTML = '<span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;max-width:100%">' + name + '</span>'
+        + '<span class="session-preset-subtitle">' + subtitle + '</span>';
+      loadBtn.addEventListener('click', (function(n) { return function() { applySnapshot(loadSessionPresets()[n]); }; })(name));
+      const renBtn = document.createElement('button');
+      renBtn.className   = 'preset-rename-btn';
+      renBtn.textContent = '\u270e'; // pencil
+      renBtn.title       = 'Rename this preset';
+      renBtn.addEventListener('click', (function(n, el) { return function() { startPresetRename(n, el); }; })(name, loadBtn));
+      const upBtn = document.createElement('button');
+      upBtn.className   = 'preset-update-btn';
+      upBtn.textContent = 'Update';
+      upBtn.title       = 'Overwrite this preset with the current setup';
+      upBtn.addEventListener('click', (function(n, b) { return function() { confirmOverwrite(n, b); }; })(name, upBtn));
+      const delBtn = document.createElement('button');
+      delBtn.className = 'preset-del-btn';
+      delBtn.textContent = '\u2715';
+      delBtn.addEventListener('click', (function(n) { return function() { deleteSessionPreset(n); }; })(name));
+      row.appendChild(loadBtn);
+      row.appendChild(renBtn);
+      row.appendChild(upBtn);
+      row.appendChild(delBtn);
+      container.appendChild(row);
+    });
+  }
+
+  renderSessionPresets();
+</script>
+
+
+<script>
+  // ── Theme ──────────────────────────────────────────
+  function toggleTheme() {
+    const isLight = document.body.classList.toggle('light');
+    document.getElementById('themeToggle').textContent = isLight ? '☾ Dark' : '☀ Light';
+    localStorage.setItem('test_courtTimerTheme', isLight ? 'light' : 'dark');
+  }
+
+
+  // ── Simple / Advanced mode ─────────────────────────
+  function toggleSimpleMode() {
+    const isSimple = document.body.classList.toggle('simple-mode');
+    document.getElementById('simpleModeBtn').classList.toggle('simple-active', isSimple);
+    document.getElementById('simpleModeBtn').textContent = isSimple ? '⊞ Advanced' : '⊡ Simple';
+    localStorage.setItem('test_courtTimerSimpleMode', isSimple ? '1' : '0');
+    // Sync simple start button state immediately
+    renderUI();
+  }
+
+  (function() {
+    if (localStorage.getItem('test_courtTimerSimpleMode') === '1') {
+      document.body.classList.add('simple-mode');
+      const btn = document.getElementById('simpleModeBtn');
+      if (btn) { btn.classList.add('simple-active'); btn.textContent = '⊞ Advanced'; }
+    }
+  })();
+
+  // Restore saved theme on load
+  (function() {
+    const saved = localStorage.getItem('test_courtTimerTheme');
+    if (saved === 'light') {
+      document.body.classList.add('light');
+      const btn = document.getElementById('themeToggle');
+      if (btn) btn.textContent = '☾ Dark';
+    }
+  })();
+</script>
+
+<script>
+  // ── Sections Manager ───────────────────────────────
+
+  // Map section IDs to friendly display names
+  const SECTION_NAMES = {
+    layout:     'Display Layout',
+    playback:   'Playback',
+    adjust:     'Adjust Time',
+    settime:    'Set Time',
+    texteditor: 'Text Editor',
+    colors:     'Color Settings',
+    caseinfo:   'Case Info',
+  };
+
+  function loadHiddenSections() {
+    try { return JSON.parse(localStorage.getItem('test_courtTimerHiddenSections') || '[]'); } catch(e) { return []; }
+  }
+
+  function saveHiddenSections(hidden) {
+    localStorage.setItem('test_courtTimerHiddenSections', JSON.stringify(hidden));
+  }
+
+  function applyHiddenSections() {
+    const hidden = loadHiddenSections();
+    document.querySelectorAll('.section[data-section-id]').forEach(sec => {
+      const id = sec.dataset.sectionId;
+      sec.dataset.hidden = hidden.includes(id) ? 'true' : 'false';
+    });
+  }
+
+  function toggleSectionVisibility(id) {
+    const hidden = loadHiddenSections();
+    const idx = hidden.indexOf(id);
+    if (idx === -1) hidden.push(id);
+    else hidden.splice(idx, 1);
+    saveHiddenSections(hidden);
+    applyHiddenSections();
+    renderSectionsPanel();
+  }
+
+  function renderSectionsPanel() {
+    const panel  = document.getElementById('sectionsMgr');
+    const hidden = loadHiddenSections();
+
+    // Build chips for every known section
+    const ids = Object.keys(SECTION_NAMES);
+    panel.innerHTML = `<div class="mgr-title">Show / hide sections — click to toggle</div><div class="mgr-grid"></div>`;
+    const grid = panel.querySelector('.mgr-grid');
+
+    ids.forEach(id => {
+      const isHidden = hidden.includes(id);
+      const chip = document.createElement('button');
+      chip.className = 'mgr-chip' + (isHidden ? ' hidden-section' : '');
+      chip.innerHTML = `<span class="chip-dot"></span>${SECTION_NAMES[id]}`;
+      chip.title = isHidden ? 'Click to show this section' : 'Click to hide this section';
+      chip.addEventListener('click', () => toggleSectionVisibility(id));
+      grid.appendChild(chip);
+    });
+  }
+
+  function toggleSectionsPanel() {
+    const panel = document.getElementById('sectionsMgr');
+    const btn   = document.getElementById('sectionsBtn');
+    const open  = panel.style.display === 'none' || panel.style.display === '';
+    panel.style.display = open ? 'block' : 'none';
+    btn.classList.toggle('panel-open', open);
+    if (open) renderSectionsPanel();
+  }
+
+  // Apply on load
+  applyHiddenSections();
+</script>
+
+<!-- About dialog -->
+<div id="aboutModal" class="about-overlay" style="display:none" onclick="if(event.target===this)closeAbout()">
+  <div class="about-card">
+    <div class="about-title">Court Timer</div>
+    <div class="about-version" id="aboutVersion">Version</div>
+    <div class="about-updated" id="aboutUpdated"></div>
+    <div class="about-whatsnew-label">What's new</div>
+    <ul class="about-list" id="aboutChanges"></ul>
+    <div class="about-update-row" id="aboutUpdateRow"></div>
+    <a class="about-guide-link" href="https://ndcourts.atlassian.net/wiki/spaces/IT/pages/26968065/OBS+Clock+User+Guide" target="_blank" rel="noopener">Open the user guide ↗</a>
+    <button class="about-close" onclick="closeAbout()">Close</button>
+  </div>
+</div>
+
+<div id="bottomBar">
+  <button id="simpleModeBtn" onclick="toggleSimpleMode()">⊡ Simple</button>
+  <button id="sectionsBtn" onclick="toggleSectionsPanel()">⊞ Sections</button>
+  <button id="aboutBtn" onclick="showAbout()">ⓘ About</button>
+  <button id="themeToggle" onclick="toggleTheme()">☀ Light</button>
+</div>
+
+<script>
+  // ── About / version + auto-update (mirrors the budget app) ──────────
+  const APP_VERSION = '1.0.1';
+  const APP_UPDATED = 'June 30, 2026';
+  const APP_CHANGES = [
+    'Removed the running clock option',
+    'Case Info now leads with Time Allocations and Presets; case text, seal and fonts are folded into a "set once" section',
+    'Court seal loads on the hosted overlay',
+    'About box shows the version and a manual "Check for update" button',
+    'All-in-one presets save text, timers, added timers and set times together',
+  ];
+
+  function showAbout() {
+    document.getElementById('aboutVersion').textContent = 'Version ' + APP_VERSION;
+    document.getElementById('aboutUpdated').textContent = 'Updated ' + APP_UPDATED;
+    const ul = document.getElementById('aboutChanges');
+    ul.innerHTML = '';
+    APP_CHANGES.forEach(c => { const li = document.createElement('li'); li.textContent = c; ul.appendChild(li); });
+    renderUpdateRow();
+    checkForUpdate();
+    document.getElementById('aboutModal').style.display = 'flex';
+  }
+  function closeAbout() { document.getElementById('aboutModal').style.display = 'none'; }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAbout(); });
+
+  let _latestVersion = null;
+
+  function renderUpdateRow() {
+    const row = document.getElementById('aboutUpdateRow');
+    if (!row) return;
+    row.innerHTML = '';
+    if (_latestVersion && _latestVersion !== APP_VERSION) {
+      const btn = document.createElement('button');
+      btn.className = 'about-update-btn';
+      btn.textContent = '↑ Update to v' + _latestVersion;
+      btn.addEventListener('click', forceUpdate);
+      row.appendChild(btn);
+    } else {
+      const status = document.createElement('div');
+      status.className = 'about-uptodate';
+      status.textContent = _latestVersion ? "✓ You're up to date" : 'Tap to check for updates';
+      const btn = document.createElement('button');
+      btn.className = 'about-check-btn';
+      btn.textContent = '⟳ Check for update';
+      btn.addEventListener('click', manualCheck);
+      row.appendChild(status);
+      row.appendChild(btn);
+    }
+  }
+
+  async function manualCheck(e) {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+    await checkForUpdate();
+  }
+
+  async function checkForUpdate() {
+    try {
+      const res = await fetch('version.txt?_=' + Date.now(), { cache: 'no-cache' });
+      if (res.ok) {
+        const live = (await res.text()).trim();
+        if (live) _latestVersion = live;
+      }
+    } catch (e) { /* offline */ }
+    renderUpdateRow();
+  }
+
+  async function forceUpdate() {
+    try {
+      if (window.caches) {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter(k => !/fonts/i.test(k)).map(k => caches.delete(k)));
+      }
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) { try { await reg.update(); } catch (e) {} }
+      }
+    } catch (e) {}
+    window.location.replace(window.location.pathname + '?v=' + Date.now());
+  }
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      reg.update();
+      window.addEventListener('focus', () => { try { reg.update(); } catch (e) {} });
+    }).catch(() => {});
+    let _swReloaded = false;
+    const _wasControlled = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!_wasControlled || _swReloaded) return;
+      _swReloaded = true;
+      window.location.reload();
+    });
+  }
+  window.addEventListener('focus', checkForUpdate);
+  setInterval(checkForUpdate, 120000);
+  checkForUpdate();
+</script>
+</body>
+</html>
